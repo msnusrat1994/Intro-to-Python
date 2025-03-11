@@ -1,0 +1,51 @@
+import argparse
+from Bio import SeqIO
+
+def get_arguments():
+    parser = argparse.ArgumentParser(description="Process a FASTA file based on GC content and length thresholds.")
+    parser.add_argument("--gc_threshold", type=float, required=True, help="GC content threshold (as a percentage).")
+    parser.add_argument("--length_threshold", type=int, required=True, help="Length threshold for sequences.")
+    parser.add_argument("--input_fasta", type=str, required=True, help="Input FASTA file.")
+    args = parser.parse_args()
+    return args.gc_threshold, args.length_threshold, args.input_fasta
+
+def calculate_gc_content(sequence):
+    g_count = sequence.count("G")
+    c_count = sequence.count("C")
+    gc_content = ((g_count + c_count) / len(sequence)) * 100
+    return gc_content
+
+def calculate_length(sequence):
+    return len(sequence)
+
+def main():
+    gc_threshold, length_threshold, input_fasta = get_arguments()
+    low_gc_low_length_file = "low_gc_low_length.fa"
+    high_gc_high_length_file = "high_gc_high_length.fa"
+    mixed_category_file = "mixed_category.fa"
+    low_gc_low_length = open(low_gc_low_length_file, "w")
+    high_gc_high_length = open(high_gc_high_length_file, "w")
+    mixed_category = open(mixed_category_file, "w")
+    print(f"Processing file: {input_fasta}")
+    for record in SeqIO.parse(input_fasta, "fasta"):
+        sequence = str(record.seq)
+        gc_content = calculate_gc_content(sequence)
+        length = calculate_length(sequence)
+        print(f"Sequence {record.id}: GC content = {gc_content:.2f}%, Length = {length}")
+        if gc_content < gc_threshold and length < length_threshold:
+            SeqIO.write(record, low_gc_low_length, "fasta")
+        elif gc_content >= gc_threshold and length >= length_threshold:
+            SeqIO.write(record, high_gc_high_length, "fasta")
+        else:
+            SeqIO.write(record, mixed_category, "fasta")
+    low_gc_low_length.close()
+    high_gc_high_length.close()
+    mixed_category.close()
+
+    print(f"Sequences with low GC content and length written to {low_gc_low_length_file}")
+    print(f"Sequences with high GC content and length written to {high_gc_high_length_file}")
+    print(f"Sequences in mixed category written to {mixed_category_file}")
+    print("Processing complete!")
+
+if __name__ == "__main__":
+    main()
